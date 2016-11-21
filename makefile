@@ -25,6 +25,11 @@ factorial_mpi:
 	$(CC) $(CFLAGS) $@.c -o $@.o
 	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x
 
+f_de_x_mpi:
+	echo Estoy compilando $@.c
+	$(CC) $(CFLAGS) $@.c -o $@.o
+	$(CC) $@.o $(LFLAGS) -lm -o  $@.x
+
 pi_mpi:
 	echo Estoy compilando $@.c
 	$(CC) $(CFLAGS) $@.c -o $@.o
