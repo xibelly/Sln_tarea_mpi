@@ -1,6 +1,6 @@
 /* Xibelly Eliseth Mosquera Escobar - Lunes 21 de Nov de 2016
 
- 1) Escribir un programa que utilice la serie de taylor de la funcion coseno(alrededor de x=0) para calcular el seno de un angulo. El programa debe recibir como entrada el valor del angulo (x) en grados y en el numero de terminos (N) de la serie a usarse en la expansion, y retornar en pantalla el valor de cosen(x). Debe de correr con un # indeterminado de procesadores.
+ 2) Escribir un programa que utilice la serie de taylor de la funcion coseno(alrededor de x=0) para calcular el seno de un angulo. El programa debe recibir como entrada el valor del angulo (x) en grados y en el numero de terminos (N) de la serie a usarse en la expansion, y retornar en pantalla el valor de cosen(x). Debe de correr con un # indeterminado de procesadores.
 
  */
 
