@@ -19,6 +19,11 @@ coseno_mpi:
 	echo Estoy compilando $@.c
 	$(CC) $(CFLAGS) $@.c -o $@.o
 	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x
+
+factorial_mpi:
+	echo Estoy compilando $@.c
+	$(CC) $(CFLAGS) $@.c -o $@.o
+	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x
 debug: 
 	echo Estoy compilando para debugear $@.c
 	$(CC) $(CFLAGSDEBUG) $@.c -o $@.o
