@@ -1,6 +1,6 @@
 /* Xibelly Eliseth Mosquera Escobar - Lunes 21 de Nov de 2016
 
- 2) Escribir un programa que utilice la serie de taylor de la funcion coseno(alrededor de x=0) para calcular el seno de un angulo. El programa debe recibir como entrada el valor del angulo (x) en grados y en el numero de terminos (N) de la serie a usarse en la expansion, y retornar en pantalla el valor de cosen(x). Debe de correr con un # indeterminado de procesadores.
+ 2) Escribir un programa que utilice la serie de taylor de la funcion cos(alrededor de x=0) para calcular el seno de un angulo. El programa debe recibir como entrada el valor del angulo (x) en grados y en el numero de terminos (N) de la serie a usarse en la expansion, y retornar en pantalla el valor de cos(x). Debe de correr con un # indeterminado de procesadores.
 
  */
 
@@ -9,7 +9,7 @@ Analisis y diseño
 
 Para resolver el problema de calcular el seno de un # usando la serie de taylor centrada en x=0
  
-  cosen(x) = sum_n=0^inf ( (-1)^n x^{2n} )/ (2n)!                                 (1)
+  cos(x) = sum_n=0^inf ( (-1)^n x^{2n} )/ (2n)!                                 (1)
 
 Necesitamos:
 
@@ -23,23 +23,7 @@ Necesitamos:
 
 Como se va hacer:
 
- para resolver nuestro problema vamos hacer que cada procesador calcule un termino de la suma, es decir, #procesos = #de iteraciones
-   asi:
-
-   task 0 -> termino 0
-
-   task 1 -> termino 1
-   .
-   .
-   .
-
-   task N -> termino N
-
-Tenemos dos modos de hacer dicho calculo -> 
-
-Modo1) calculamos cada termino y hacemos un reduce al proceso raiz
-
-Modo 2) calculamos cada termino envioamos al proceso raiz, este recibe cada termino y luego suma.
+calculamos cada termino enviamos al proceso raiz, este recibe cada termino y luego suma.
 
 */
 
@@ -54,8 +38,9 @@ Modo 2) calculamos cada termino envioamos al proceso raiz, este recibe cada term
 
 int main(int argc, char **argv)
 {
-
-  double angulo, numerador, numerador0, term, term0, denominador, denominador0, suma=0.0, cos_x, cos_x0, radianes, suma2=0.0;
+  int i,N;
+  
+  double angulo, numerador, numerador0, term, term0, denominador, denominador0, suma=0.0, cos_x,cos_x0, radianes, suma2=0.0;
 
   int err, dest, remit;
   int error, eclass, len;
@@ -64,7 +49,9 @@ int main(int argc, char **argv)
   int Number_of_process, task;
   MPI_Status status;
 
+  int min, max;
 
+  
   //Se inicializa MPI
   
   err = MPI_Init(&argc, &argv); 
@@ -74,53 +61,36 @@ int main(int argc, char **argv)
   MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
   
-  if(argc != 2)
+  if(argc != 3)
     {
       printf("ERROR--> use as:\n");
-      printf("%s angulo \n",argv[0]);
+      printf("%s #terms angle \n",argv[0]);
       exit(0);  
     }
 
   //Carga de parametros
-  
-  angulo   = atof(argv[1]);
+
+  N = atoi(argv[1]);
+  angulo   = atof(argv[2]);
   radianes = angulo*M_PI/180.0;
+  min = 0;
+  max = (int) floor(N/Number_of_process);
 
+  if(N < 0)
+    printf("ERROR: NEGATIVE ORDER\n");
 
-  //Calculo coseno(x) Modo 1 
+   
+  dest = 0;//proceso raiz
   
-  dest = 0;      
-          
-  term         = (2*task);
-  
-  numerador    = pow(-1,task) * pow(radianes,term);
-  
-  denominador  = factorial(term);    //Se llama a la funcion factorial
-  
-  cos_x       = numerador / denominador; 
-  
-      
-  MPI_Reduce(&cos_x, &suma2, 1, MPI_DOUBLE, MPI_SUM, 0,MPI_COMM_WORLD); //Se calcula el reduce
+  //Calculo sen(x)
 
-  
-      
-   if(task == 0)	
+  if(task != 0) //identifica el proceso que va a ejecutar la instrucción
     {
-      printf("MODE 1\n");
-      printf("cos( %lf grados) =  %f\n",angulo,suma2);
       
-      fflush(stdout);
-    }
-
-
-   //Calculo sen(x) Modo 2
-
-    if(task != 0) //identifica el proceso que va a ejecutar la instrucción
-        {
-     
-	  dest = 0;      
-          
-	  term         = (2*task) ;
+      for(i=min; i<max; i++)
+	{     
+	  
+	  term         = (2*task) + 1;
 	  
 	  numerador    = pow(-1,task) * pow(radianes,term);
 	  
@@ -128,28 +98,29 @@ int main(int argc, char **argv)
 	  
 	  cos_x       = numerador / denominador; 
 	  
-	  MPI_Send(&cos_x, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
 	}
-
-    if(task == 0)	
-    {
-      printf("MODE 2\n");
       
+      MPI_Send(&cos_x, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
+    }
+  
+  if(task == 0)	
+    {
+            
       for(remit = 1; remit < Number_of_process; remit ++)
 	{
 	  error= MPI_Recv(&recvbuf, 1, MPI_DOUBLE, remit, 0,MPI_COMM_WORLD, &status); //se recive cada termino 
 
 	  
 	  printf("Process 0 receive number %lf to process %d\n", recvbuf, remit);
-
-
+	  
+	  
 	  MPI_Error_class(error, &eclass);
 	  MPI_Error_string(error, estring, &len);
 	  printf("Error %d:%s\n",eclass, estring);
- 
+	  
 	  fflush(stdout);
 	  
-	  term0         = (2*task); //se calcula el termino 0 de la serie, respectivo del proceso 0
+	  term0         = (2*task) + 1; //se calcula el termino 0 de la serie, respectivo del proceso 0
 	  
 	  numerador0    = pow(-1,task) * pow(radianes,term0);
 	  
