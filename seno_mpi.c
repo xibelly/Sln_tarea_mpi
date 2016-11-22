@@ -23,23 +23,7 @@ Necesitamos:
 
 Como se va hacer:
 
- para resolver nuestro problema vamos hacer que cada procesador calcule un termino de la suma, es decir, #procesos = #de iteraciones
-   asi:
-
-   task 0 -> termino 0
-
-   task 1 -> termino 1
-   .
-   .
-   .
-
-   task N -> termino N
-
-Tenemos dos modos de hacer dicho calculo -> 
-
-Modo1) calculamos cada termino y hacemos un reduce al proceso raiz
-
-Modo 2) calculamos cada termino envioamos al proceso raiz, este recibe cada termino y luego suma.
+calculamos cada termino enviamos al proceso raiz, este recibe cada termino y luego suma.
 
 */
 
@@ -80,7 +64,7 @@ int main(int argc, char **argv)
   if(argc != 3)
     {
       printf("ERROR--> use as:\n");
-      printf("%s #terms angulo \n",argv[0]);
+      printf("%s #terms angle \n",argv[0]);
       exit(0);  
     }
 
@@ -92,8 +76,11 @@ int main(int argc, char **argv)
   min = 0;
   max = (int) floor(N/Number_of_process);
 
-  
-  dest = 0;
+  if(N < 0)
+    printf("ERROR: NEGATIVE ORDER\n");
+
+   
+  dest = 0;//proceso raiz
   
   //Calculo sen(x)
 
