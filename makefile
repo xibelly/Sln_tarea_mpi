@@ -43,6 +43,11 @@ pi_mpi:
 	echo Estoy compilando $@.c
 	$(CC) $(CFLAGS) $@.c -o $@.o
 	$(CC) $@.o $(LFLAGS) -lm -o  $@.x
+
+pi2_mpi:
+	echo Estoy compilando $@.c
+	$(CC) $(CFLAGS) $@.c -o $@.o
+	$(CC) $@.o $(LFLAGS) -lm -o  $@.x
 debug: 
 	echo Estoy compilando para debugear $@.c
 	$(CC) $(CFLAGSDEBUG) $@.c -o $@.o
