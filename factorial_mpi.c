@@ -95,10 +95,10 @@ int main(int argc, char **argv)
   //Calculo x! 
   fact_x = 1.0;
 
-   for(i=min; i<max; i++)
+   for(i=min; i<max+1; i++)
     {
       
-      fact_x  = fact_x * 1.0 * i *max;  //producto de los terminos en un proceso dado
+      fact_x  = fact_x * 1.0 * i ;  //producto de los terminos en un proceso dado
 
       if(x==0)  //caso 0!
 	 fact = 1.0;
