@@ -21,23 +21,22 @@ Necesitamos:
 
 Como se va hacer:
 
- para resolver nuestro problema vamos hacer que cada procesador calcule un termino de la suma, es decir, #procesos = #de iteraciones
-   asi:
+ para resolver nuestro problema vamos hacer que cada procesador calcule un conjunto de terminos de la suma, es decir, 
 
-   task 0 -> 0!
+   task 0 -> termino i
 
-   task 1 -> 1!
+   task 1 -> termino k
    .
    .
    .
 
-   task N -> N!
+   task N -> termino j
 
-Hay dos modos:
+Donde cada resultado de los diferentes procesos se agrupa en un solo proceso y estos a su vez se multiplican entre asi haciendo uso de un 
+redude.
 
-Modo 1 -> con un reduce
+Metodo -> con un reduce
 
-Modo 2 -> con cada proceso
 
 */
 
@@ -53,6 +52,7 @@ Modo 2 -> con cada proceso
 int main(int argc, char **argv)
 {
 
+  int i,j;
   double x, fact1_x, fact_x, fact, suma=0.0;
 
   int err, dest, remit;
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   double recvbuf=0.0;
   int Number_of_process, task;
   MPI_Status status;
-
+  int min, max;
 
   //Se inicializa MPI
   
@@ -75,58 +75,53 @@ int main(int argc, char **argv)
   if(argc != 2)
     {
       printf("ERROR--> use as:\n");
-      printf("%s angulo \n",argv[0]);
+      printf("%s # \n",argv[0]);
       exit(0);  
     }
 
   //Carga de parametros
   
   x   = atof(argv[1]);
- 
+  min = (task *(int) ceil(x/Number_of_process) ) + 1 ; 
+  max = (task + 1) * (int) ceil(x/Number_of_process) ;
 
-  //Calculo x! modo 1
-
-  fact1_x = factorial(x);
-
-  printf("MODE 1 ->  (%lf)! = %f\n",x, fact1_x);
-  fflush(stdout);
-
-   //Calculo Modo 2
-
-  if(task != 0) //identifica el proceso que va a ejecutar la instrucción
-    {
-      dest = 0;
-      
-      fact_x  = factorial(x);    
-      
-      MPI_Send(&fact_x, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
-    }
+  /* x/Number_of_proces -> establece el # de terminos 
+     a calcularse la productoria para cada proceso y 
+     min y max el intervalo en que se va calcular
+    */
   
-  if(task == 0)	
+  dest = 0;
+
+  //Calculo x! 
+  fact_x = 1.0;
+
+   for(i=min; i<max; i++)
     {
       
-      for(remit = 1; remit < Number_of_process; remit ++)
-	{
-	  error= MPI_Recv(&recvbuf, 1, MPI_DOUBLE, remit, 0,MPI_COMM_WORLD, &status); //se recive cada termino 
-	  	  
-	  printf("Process 0 receive number (%lf)! = %lf to process %d\n", x, recvbuf, remit);
-	 
-	  
-	  
-	  MPI_Error_class(error, &eclass);
-	  MPI_Error_string(error, estring, &len);
-	  printf("Error %d:%s\n",eclass, estring);
-	  
-	  
+      fact_x  = fact_x * 1.0 * i *max;  //producto de los terminos en un proceso dado
 
-	  fact = (recvbuf * x) / x;
-	  
+      if(x==0)  //caso 0!
+	 fact = 1.0;
+
+      if(max == (int)x + 1) //condicion para procesos impares y/o x -> impares 
+	{
+	  fact_x  = 1.0 * x; 
+	  	  
 	}
       
-      
-      printf("MODE 2 -> (%lf)! = %f\n",x, fact);
-      fflush(stdout);
     }
+    
+  printf("task %d computes %lf -> %d\n",task,fact_x, (int)x);
+  MPI_Reduce(&fact_x, &fact, 1, MPI_DOUBLE, MPI_PROD, dest,MPI_COMM_WORLD); //se calcula el factorial total
+ 
+ 
+
+  if(task == 0)	
+    {
+      printf("MDODE 2-> (%lf)! = %lf\n",x,fact);
+      
+    }
+  
   
    err = MPI_Finalize();
 }
