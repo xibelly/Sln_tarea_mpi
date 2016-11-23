@@ -15,7 +15,16 @@ seno_mpi:
 	echo Estoy compilando $@.c
 	$(CC) $(CFLAGS) $@.c -o $@.o
 	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x	#factorial.o	
+seno2_mpi:
+	echo Estoy compilando $@.c
+	$(CC) $(CFLAGS) $@.c -o $@.o
+	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x	#factorial.o	
 coseno_mpi:
+	echo Estoy compilando $@.c
+	$(CC) $(CFLAGS) $@.c -o $@.o
+	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x
+
+coseno2_mpi:
 	echo Estoy compilando $@.c
 	$(CC) $(CFLAGS) $@.c -o $@.o
 	$(CC) factorial.o $@.o $(LFLAGS) -lm -o  $@.x
