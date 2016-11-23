@@ -23,19 +23,7 @@ Necesitamos:
 
 Como se va hacer:
 
- para resolver nuestro problema vamos hacer que cada procesador calcule un conjunto de terminos de la suma, es decir, 
-
-   task 0 -> termino i
-
-   task 1 -> termino k
-   .
-   .
-   .
-
-   task N -> termino j
-
-Donde cada resultado de los diferentes procesos se agrupa en un solo proceso y estos a su vez se suman entre asi haciendo uso de un 
-redude -> MPI_SUM. cada termino lo  enviamos al proceso raiz, este recibe cada termino y luego suma.
+calculamos cada termino enviamos al proceso raiz, este recibe cada termino y luego suma.
 
 */
 
@@ -52,7 +40,7 @@ int main(int argc, char **argv)
 {
   int i,N;
   
-  double angulo, numerador, term, denominador, suma=0.0, seno_x, radianes, suma2=0.0;
+  double angulo, numerador, numerador0, term, term0, denominador, denominador0, suma=0.0, seno_x,seno_x0, radianes, suma2=0.0;
 
   int err, dest, remit;
   int error, eclass, len;
@@ -61,7 +49,7 @@ int main(int argc, char **argv)
   int Number_of_process, task;
   MPI_Status status;
 
-  int istar, iend;
+  int min, max;
 
   
   //Se inicializa MPI
@@ -85,8 +73,8 @@ int main(int argc, char **argv)
   N = atoi(argv[1]);
   angulo   = atof(argv[2]);
   radianes = angulo*M_PI/180.0;
-  istar = task * (int) ceil(N/Number_of_process);
-  iend = (task +1) * (int) ceil(N/Number_of_process);
+  min = 0;
+  max = (int) floor(N/Number_of_process);
 
   if(N < 0)
     printf("ERROR: NEGATIVE ORDER\n");
@@ -96,27 +84,62 @@ int main(int argc, char **argv)
   
   //Calculo sen(x)
 
-  for(i=istar; i<iend; i++)
+  if(task != 0) //identifica el proceso que va a ejecutar la instrucción
     {
-      term         = (2*i) + 1;
-	  
-      numerador    = pow(-1,i) * pow(radianes,term);
-	  
-      denominador  = factorial(term);    
-	  
-      seno_x       += numerador / denominador; 
-
-      MPI_Reduce(&seno_x, &suma, 1, MPI_DOUBLE, MPI_SUM, dest,MPI_COMM_WORLD); //se calcula el factorial total
       
+      for(i=min; i<max; i++)
+	{     
+	  
+	  term         = (2*task) + 1;
+	  
+	  numerador    = pow(-1,task) * pow(radianes,term);
+	  
+	  denominador  = factorial(term);    
+	  
+	  seno_x       = numerador / denominador; 
+	  
+	}
+      
+      MPI_Send(&seno_x, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
     }
-
-  if(task == 0)
+  
+  if(task == 0)	
     {
+            
+      for(remit = 1; remit < Number_of_process; remit ++)
+	{
+	  error= MPI_Recv(&recvbuf, 1, MPI_DOUBLE, remit, 0,MPI_COMM_WORLD, &status); //se recive cada termino 
+
+	  
+	  printf("Process 0 receive number %lf to process %d\n", recvbuf, remit);
+	  
+	  
+	  MPI_Error_class(error, &eclass);
+	  MPI_Error_string(error, estring, &len);
+	  printf("Error %d:%s\n",eclass, estring);
+	  
+	  fflush(stdout);
+	  
+	  term0         = (2*task) + 1; //se calcula el termino 0 de la serie, respectivo del proceso 0
+	  
+	  numerador0    = pow(-1,task) * pow(radianes,term0);
+	  
+	  denominador0  = factorial(term0);    
+	  
+	  seno_x0       = numerador0 / denominador0;
+	  
+	  suma   = suma+recvbuf;
+	}
+
+       suma = suma + seno_x0 ;
+
+       
        printf("sen( %lf grados) = %f \n",angulo,suma);
        fflush(stdout);
+
     }
 
-      
+    
    err = MPI_Finalize();
 }
 
