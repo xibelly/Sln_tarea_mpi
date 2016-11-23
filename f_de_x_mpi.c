@@ -39,28 +39,32 @@ double recvbuf=0.0;
 int Number_of_process, task;
 MPI_Status status;
 
+#define N 10
 
 //funciones
 
 void fdex(double dx)
  {
-   int i,n;
+   int i;
+   int istar, iend;
    double x, f_x;
    double term1, term2, term3, result;
 
    char buff[200];
    FILE *write =NULL;
 
-   n = 10;
+    
+   istar = task * (int) ceil(N/Number_of_process);
+   iend = (task +1) * (int) ceil(N/Number_of_process);
 
-   sprintf(buff,"file_%d.dat",task);
+   sprintf(buff,"file_fdex.dat");
    
-   write = fopen(buff,"w");
+   write = fopen(buff,"a");
    
    if(write==NULL)
     printf("THE FILE CAN NOT BE OPENED\n");
       
-   for(i=0; i<n; i++)
+   for(i=istar; i<iend; i++)
      {
        x = i * dx;
        
@@ -69,7 +73,7 @@ void fdex(double dx)
        term3 = sinh(x);
        result = term1 * term2 * term3;
 
-       fprintf(write,"%d %lf %lf\n",i,x,result);
+       fprintf(write,"%d %lf %lf\n",i,x,result);fflush(stdout);
  
      }
 	 
@@ -98,10 +102,15 @@ int main(int argc, char **argv){
       exit(0);  
     }
 
+  if(N < Number_of_process)
+     printf("ERROR: A process needs at least one data\n");
+  
   dx = atof(argv[1]);
   
   fdex(dx);
  
+  MPI_Barrier(MPI_COMM_WORLD);
+
   err = MPI_Finalize();
   
 }
