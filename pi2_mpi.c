@@ -50,8 +50,9 @@ int istar, iend;
 //funciones
 void pi1()
 {
-   int i;
+  int i,j;
    double  suma, producto, pi;
+   double  suma2, producto2, pi2, result2;
      
    suma       = 0.0;
 
@@ -67,6 +68,22 @@ void pi1()
 	   producto =  producto * suma *0.5;	   
        
 	   pi = 2.0 / producto;
+
+	   if(task == (Number_of_process - 1))//calculo de los ultimos terminos en el ultimo task
+	     {
+	       iend = N + 1;
+	       
+	       for(j=istar; j<iend; j++)
+		 {
+		   
+		   suma2     = sqrt(suma2+2.0) ;
+		   
+		   producto2 =  producto2 * suma2 *0.5;	   
+		   
+		   pi2 = 2.0 / producto2;
+		 }
+	       
+	     }
 	 }
               
        MPI_Send(&pi, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
@@ -89,7 +106,7 @@ void pi1()
 
 	}
    
-       printf("pi1: %lf\n",recvbuf);
+       printf("MODE 1 -> pi1: %lf\n",recvbuf);
        fflush(stdout);
      }
    
@@ -97,9 +114,10 @@ void pi1()
 
 void pi2()
 {
-   int i;
+  int i,j;
    double term1, term1_0, term2, term2_0, result, result0, suma, suma0, pi, pi0, suma_total;
-
+   double term1_2, term2_2, result2, suma2, pi2;
+   
    suma = 0.0;
 
    if(task != 0) //identifica el proceso que va a ejecutar la instrucción
@@ -114,8 +132,27 @@ void pi2()
 	      suma = suma + result;
 	      
 	      pi = suma * 4.0;
+
+	      if(task == (Number_of_process - 1))//calculo de los ultimos terminos en el ultimo task
+		{
+		  iend = N + 1;
+		  
+		  for(j=istar; j<iend; j++)
+		    {
+		      term1_2 = pow(-1,i);
+		      term2_2 = (2.0*i) + 1.0;
+		      result2 = term1 / term2;
+		      
+		      suma2 = suma2 + result2;
+       
+		      pi2 = suma2 * 4.0;
+		      
+		    }
+		  
+		}
+	      
 	    }
-	   
+	  
 	  MPI_Send(&pi, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia cada termino al proceso raiz
 	  
 	}
@@ -148,7 +185,7 @@ void pi2()
        
        suma_total = suma + recvbuf;
 
-       printf("MODE1 -> pi2: %lf\n",suma_total);
+       printf("MODE2 -> pi2: %lf\n",suma_total);
        fflush(stdout);
      }
  
