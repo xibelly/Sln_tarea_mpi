@@ -37,6 +37,9 @@ Como se va hacer:
 Donde cada resultado de los diferentes procesos se agrupa en un solo proceso y estos a su vez se suman entre asi haciendo uso de un 
 redude -> MPI_SUM. cada termino lo  enviamos al proceso raiz, este recibe cada termino y luego suma.
 
+NOta: en el caso en que sobran terminos y no hay procesadores, lo que se hace es que el ultimo proceso toma los terminos restantes
+      y calcula el correspondiente producto.
+
 */
 
 #include<stdio.h>
@@ -50,9 +53,10 @@ redude -> MPI_SUM. cada termino lo  enviamos al proceso raiz, este recibe cada t
 
 int main(int argc, char **argv)
 {
-  int i,N;
+  int i,j,N;
   
   double angulo, numerador, term, denominador, suma=0.0, seno_x, radianes, suma2=0.0;
+  double  term2, numerador2,denominador2, seno2_x;
 
   int err, dest, remit;
   int error, eclass, len;
@@ -91,12 +95,14 @@ int main(int argc, char **argv)
   if(N < 0)
     printf("ERROR: NEGATIVE ORDER\n");
 
+  if(N < Number_of_process)
+     printf("ERROR: A process needs at least one data\n");
    
   dest = 0;//proceso raiz
   
   //Calculo sen(x)
 
-  for(i=istar; i<iend; i++)
+  for(i=istar; i<iend; i++)//calculo de los primeros terminos en los primeeras tasks
     {
       term         = (2*i) + 1;
 	  
@@ -104,8 +110,27 @@ int main(int argc, char **argv)
 	  
       denominador  = factorial(term);    
 	  
-      seno_x       += numerador / denominador; 
+      seno_x       += numerador / denominador;
 
+      if(task == (Number_of_process - 1))//calculo de los ultimos terminos en el ultimo task
+	{
+	  iend = N + 1;
+	  
+	  for(j=istar; j<iend; j++)
+	    {
+	      term2         = (2*j) + 1;
+	      
+	      numerador2    = pow(-1,j) * pow(radianes,term);
+	      
+	      denominador2  = factorial(term);    
+	      
+	      seno2_x       += numerador / denominador;
+	      	      
+	    }
+	  
+	}
+      
+      
       MPI_Reduce(&seno_x, &suma, 1, MPI_DOUBLE, MPI_SUM, dest,MPI_COMM_WORLD); //se calcula el factorial total
       
     }
@@ -116,7 +141,7 @@ int main(int argc, char **argv)
        fflush(stdout);
     }
 
-      
+  MPI_Barrier(MPI_COMM_WORLD);
    err = MPI_Finalize();
 }
 
