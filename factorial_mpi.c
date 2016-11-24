@@ -21,7 +21,7 @@ Necesitamos:
 
 Como se va hacer:
 
- para resolver nuestro problema vamos hacer que cada procesador calcule un conjunto de terminos de la suma, es decir, 
+ para resolver nuestro problema vamos hacer que cada procesador calcule un conjunto de terminos del factorial, es decir, 
 
    task 0 -> termino i
 
@@ -33,9 +33,11 @@ Como se va hacer:
    task N -> termino j
 
 Donde cada resultado de los diferentes procesos se agrupa en un solo proceso y estos a su vez se multiplican entre asi haciendo uso de un 
-redude.
+redude -> MPI_PROD
 
-Metodo -> con un reduce
+
+NOta: en el caso en que sobran terminos y no hay procesadores, lo que se hace es que el ultimo proceso toma los terminos restantes
+      y calcula el correspondiente producto.
 
 
 */
@@ -45,15 +47,12 @@ Metodo -> con un reduce
 #include<math.h>
 #include<mpi.h>
 
-//Sub-rutinas
-#include"factorial.h"
-
 
 int main(int argc, char **argv)
 {
 
   int i,j;
-  double x, fact1_x, fact_x, fact, suma=0.0;
+  double x, fact_x2, fact_x, fact, result;
 
   int err, dest, remit;
   int error, eclass, len;
@@ -61,7 +60,7 @@ int main(int argc, char **argv)
   double recvbuf=0.0;
   int Number_of_process, task;
   MPI_Status status;
-  int min, max;
+  int min, max, max2;
 
   //Se inicializa MPI
   
@@ -82,10 +81,10 @@ int main(int argc, char **argv)
   //Carga de parametros
   
   x   = atof(argv[1]);
-  min = (task *(int) ceil(x/Number_of_process) ) + 1 ; 
-  max = (task + 1) * (int) ceil(x/Number_of_process) ;
+  min = (task *(int) floor(x/Number_of_process) ) + 1; 
+  max = ((task + 1) * (int) floor(x/Number_of_process)) +1 ;
 
-  /* x/Number_of_proces -> establece el # de terminos 
+    /* x/Number_of_proces -> establece el # de terminos 
      a calcularse la productoria para cada proceso y 
      min y max el intervalo en que se va calcular
     */
@@ -94,33 +93,45 @@ int main(int argc, char **argv)
 
   //Calculo x! 
   fact_x = 1.0;
+  fact_x2 = 1.0;
 
-   for(i=min; i<max+1; i++)
+
+  for(i=min; i<max; i++)
     {
       
-      fact_x  = fact_x * 1.0 * i ;  //producto de los terminos en un proceso dado
+      fact_x  = fact_x * 1.0 * i ;  //producto de los primeros terminos en los primeros procesos
 
-      if(x==0)  //caso 0!
-	 fact = 1.0;
-
-      if(max == (int)x + 1) //condicion para procesos impares y/o x -> impares 
+      if(task == (Number_of_process - 1))  //producto de los ultimos terminos en el ultimo proceso caso en que sobran  terminos
 	{
-	  fact_x  = 1.0 * x; 
-	  	  
-	}
+	 
+	  max = x + 1;
+	  for(j=min; j<max; j++)
+	    {
+	      fact_x2  = fact_x2 * 1.0 * j ;
+	    }
+	  
+	  
+	  //MPI_Send(&fact_x2, 1, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD); //se envia el producto al proceso raiz 
+	} 
       
     }
-    
   printf("task %d computes %lf -> %d\n",task,fact_x, (int)x);
-  MPI_Reduce(&fact_x, &fact, 1, MPI_DOUBLE, MPI_PROD, dest,MPI_COMM_WORLD); //se calcula el factorial total
+  MPI_Reduce(&fact_x, &fact, 1, MPI_DOUBLE, MPI_PROD, dest,MPI_COMM_WORLD); //se hace un reduce en estos procesos
+       
+    
+  
+  if(x==0)  //caso 0!
+    fact = 1.0;
  
- 
-
-  if(task == 0)	
+  
+  if(task == 0)	//calculo del factorial en le proceso raiz
     {
-      printf("MDODE 2-> (%lf)! = %lf\n",x,fact);
+   
+      printf("(%lf)! = %lf\n",x,fact);
       
     }
+
+ 
   
   
    err = MPI_Finalize();
