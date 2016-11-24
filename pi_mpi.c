@@ -22,6 +22,30 @@ de p y debe imprimir en pantalla los dos valores de p obtenidos.
 
 -imprimir en pantalla los valores de pi en cada caso
 
+Nota: para ello cada proceso calcula un numero de terminos de la expasion y luego se 
+
+Como se va hacer:
+
+ para resolver nuestro problema vamos hacer que cada procesador calcule un conjunto de terminos, es decir: 
+
+   task 0 -> termino i
+
+   task 1 -> termino k
+   .
+   .
+   .
+
+   task N -> termino j
+
+Donde cada resultado de los diferentes procesos se agrupa en un solo proceso --el root- y estos a su vez se suman entre asi haciendo uso de un 
+redude -> MPI_SUM
+
+
+NOta: en el caso en que sobran terminos y no hay procesadores, lo que se hace es que el ultimo proceso toma los terminos restantes
+      y calcula el correspondiente producto.
+
+
+
  */
 
 
@@ -46,14 +70,15 @@ int istar, iend;
 //funciones
 void pi1()
 {
-   int i;
+  int i,j;
    double  suma, producto, pi, result;
+   double  suma2, producto2, pi2, result2;
     
    suma       = 0.0;
 
    producto   = 1.0;
    
-   for(i=istar; i<iend; i++)
+   for(i=istar; i<iend; i++)//calculo de los primeros en los primeros tasks
      {
        
        suma     = sqrt(suma+2.0) ;
@@ -62,7 +87,21 @@ void pi1()
        
        pi = 2.0 / producto;
 
-       //printf("%lf\n",pi);
+       if(task == (Number_of_process - 1))//calculo de los ultimos terminos en el ultimo task
+	 {
+	   iend = N + 1;
+	   
+	   for(j=istar; j<iend; j++)
+	     {
+	        
+	       suma2     = sqrt(suma2+2.0) ;
+	       
+	       producto2 =  producto2 * suma2 *0.5;	   
+	       
+	       pi2 = 2.0 / producto2;
+	     }
+
+	 }
        
        MPI_Reduce(&pi, &result,1, MPI_DOUBLE, MPI_SUM, dest,MPI_COMM_WORLD); //se envia cada termino al proceso raiz
        
@@ -70,7 +109,7 @@ void pi1()
 
    if(task == 0)
      {
-       printf("pi1: %lf\n", result/Number_of_process);
+       printf("MODE 1 -> pi1: %lf\n", result/Number_of_process);
        fflush(stdout);
      }
    
@@ -78,12 +117,13 @@ void pi1()
 
 void pi2()
  {
-   int i;
+   int i,j;
    double term1, term2, result, suma, pi, pi_out;
+   double term1_2, term2_2, result2, suma2, pi2;
 
-   suma = 0.0;
+   suma = 0.0, suma2 = 0.0;
   
-   for(i=istar; i<iend; i++)
+   for(i=istar; i<iend; i++)//calculo de los primeros en los primeros tasks
      {      
        term1 = pow(-1,i);
        term2 = (2.0*i) + 1.0;
@@ -93,13 +133,31 @@ void pi2()
        
        pi = suma * 4.0;
 
+       if(task == (Number_of_process - 1))//calculo de los ultimos terminos en el ultimo task
+	 {
+	   iend = N + 1;
+	  
+	  for(j=istar; j<iend; j++)
+	    {
+	      term1_2 = pow(-1,i);
+	      term2_2 = (2.0*i) + 1.0;
+	      result2 = term1 / term2;
+       
+	      suma2 = suma2 + result2;
+       
+	      pi2 = suma2 * 4.0;
+
+	    }
+
+	 }
+       
        MPI_Reduce(&pi, &pi_out,1, MPI_DOUBLE, MPI_SUM, dest,MPI_COMM_WORLD); //se envia cada termino al proceso raiz
      }
    
     if(task == 0)
      {
        
-       printf("pi2: %lf\n",pi_out);
+       printf("MODE 2 -> pi2: %lf\n",pi_out);
        fflush(stdout);
      }
  }
@@ -127,8 +185,14 @@ int main(int argc, char **argv){
     }
 
   N = atoi(argv[1]);
-  
-  
+
+  if(N < 0)
+    printf("ERROR: NEGATIVE ORDER\n");
+
+  if(N < Number_of_process)
+     printf("ERROR: A process needs at least one data\n");
+   
+    
   istar = task * (int) ceil(N/Number_of_process);
   iend = (task +1) * (int) ceil(N/Number_of_process);
   
